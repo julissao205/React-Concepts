@@ -13,4 +13,68 @@
 // mode:   'signup' | 'login'
 // step:   'email' | 'password' | 'confirmPassword'
 // status: 'idle' | 'loading' | 'error' | 'success'
+export const initialFlow = { mode: "signup", step: "email", status: "idle", error: "" };
 
+export function flowReducer(state, action) {
+    switch (action.type) {
+        case "SWITCHMODE": {
+            // Flip between login and signup, resetting back to the first step.
+
+            const mode = state.mode === "signup" ? "login" : "signup";
+
+            return { ...initialFlow, mode };
+        }
+
+        case "GO_TO":
+            return { ...state, step: action.step };
+
+        case "BACK": {
+            if (state.step === "confirmPassword") return { ...state, step: "password" };
+
+            if (state.step === "password") return { ...state, step: "email" };
+
+            return state;
+        }
+        
+        case "SUBMIT": 
+            return {...state, status: "loading", error: ""};
+            
+        case "SUCCESS": 
+            return {...state, status: "success"};
+            
+        case "FAIL":
+            return {...state, status: "error", error: action.error};
+            
+        case "CLEAR_STATUS":
+            return {...state, status: "idle", error: ""};
+            
+        case "RESET":
+            // Used on signout: wipe the flow back to a fresh login screen
+            return {...initialFlow, mode: "login"};
+            
+        default:
+            return state;
+    }
+}
+
+// turn new firebase error code into human readable sentences
+export function friendlyError (err) {
+    switch(err?.code) {
+        case "auth/invalid-cridential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+            return "Email or Password is incorrect.";
+        case "auth/email-already-in-use":
+            return "That email already has an account - try logging in.";
+        case "auth/weak-password":
+            return "Password should be at least 6 characters";
+        case "auth/invalid-email":
+            return "That email looks invalid.";
+        case "auth/popup-closed-by-user":
+            return "The signed in window was closed before finishing.";
+        case "auth/operation-not-allowed":
+            return "That sign in method isnt enabled in your Firebase project yet";
+        default:
+            return err?.message || "Something went wrong. Please try again.";
+    }
+}
